@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Tests\TestCase;
+use App\Models\Stock;
 use App\Models\Ingredient;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -51,13 +52,13 @@ class OrderControllerTest extends TestCase
     {
         // Create ingredients and products
         $this->beef = Ingredient::factory()->create(['name' => 'Beef']);
-        $this->beef->stock()->create(['initial_stock' => 20000, 'current_stock' => 20000]);
+        $this->beef->stock()->save($this->saveNewStock(20000));
         
         $this->cheese = Ingredient::factory()->create(['name' => 'Cheese']);
-        $this->cheese->stock()->create(['initial_stock' => 5000, 'current_stock' => 5000]);
+        $this->cheese->stock()->save($this->saveNewStock(5000));
         
         $this->onion = Ingredient::factory()->create(['name' => 'Onion']);
-        $this->onion->stock()->create(['initial_stock' => 1000, 'current_stock' => 1000]);
+        $this->onion->stock()->save($this->saveNewStock(1000));
         
         $product =  Product::factory()->create(['name' => 'Burger']);
 
@@ -68,5 +69,14 @@ class OrderControllerTest extends TestCase
         ]);
 
         $this->product = $product;
+    }
+
+    public function saveNewStock(int $quantity) : Stock
+    {
+        $stock = new Stock();
+        $stock->initial_stock = $quantity;
+        $stock->current_stock = $quantity;
+
+        return $stock;
     }
 }
