@@ -46,11 +46,16 @@ class OrderControllerTest extends TestCase
     private function seedAndReturnProductWithIngredient(): void
     {
         // Create ingredients and products
-        $this->beef = Ingredient::factory()->create(['name' => 'Beef', 'current_stock' => 20000, 'initial_stock' => 20000]);
-        $this->cheese = Ingredient::factory()->create(['name' => 'Cheese', 'current_stock' => 5000, 'initial_stock' => 5000]);
-        $this->onion = Ingredient::factory()->create(['name' => 'Onion', 'current_stock' => 1000, 'initial_stock' => 1000]);
+        $this->beef = Ingredient::factory()->create(['name' => 'Beef']);
+        $this->beef->stock()->create(['initial_stock' => 20000, 'current_stock' => 20000]);
         
-        $product =  Product::factory()->create();
+        $this->cheese = Ingredient::factory()->create(['name' => 'Cheese']);
+        $this->cheese->stock()->create(['initial_stock' => 5000, 'current_stock' => 5000]);
+        
+        $this->onion = Ingredient::factory()->create(['name' => 'Onion']);
+        $this->onion->stock()->create(['initial_stock' => 1000, 'current_stock' => 1000]);
+        
+        $product =  Product::factory()->create(['name' => 'Burger']);
 
         $product->ingredients()->attach([
             $this->beef->id => ['quantity' => 150],
