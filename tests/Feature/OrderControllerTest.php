@@ -2,10 +2,11 @@
 
 namespace Tests\Feature;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
+use App\Models\Ingredient;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class OrderControllerTest extends TestCase
 {
