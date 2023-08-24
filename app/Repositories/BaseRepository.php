@@ -23,6 +23,11 @@ abstract class BaseRepository
     {
         return $this->model->get();
     }
+
+    public function getWhereIn(array $ids, string $columns = 'id'): Collection
+    {
+        return $this->model->whereIn($columns, $ids)->get();
+    }
     
     public function getOne(int $id): Model
     {
