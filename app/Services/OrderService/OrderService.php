@@ -9,6 +9,9 @@ use Symfony\Component\HttpKernel\Exception\GoneHttpException;
 class OrderService implements OrderServiceContract
 {
 
+    protected Collection $dbProducts;
+    protected array $requestPayload;
+
     public function __construct(
         protected OrderRepository $orderRepository,
         protected ProductRepository $productRepository
@@ -16,32 +19,50 @@ class OrderService implements OrderServiceContract
 
     public function placeOrder(array $data) : Model
     {
+        $this->requestPayload = $data['products'];
         // Get the products details from DB
-        $dbProducts = $this->getProducts($data['products']);
+        $this->getProducts();
 
         // validate the quantity
-        $this->validateQuantity($dbProducts, $data['products']);
+        $this->validateQuantity();
 
         // persist the order in the database with the product items
+        $this->persistTheOrder();
 
         // update the stock
         return $this->orderRepository->create([]);
     }
 
-    private function getProducts(array $productsRequest) : Collection
+    private function getProducts() : void
     {
-        return $this->productRepository
+        $this->dbProducts = $this->productRepository
             ->getWhereIn(
-                $this->getDataFromRequest($productsRequest, 'product_id'),
+                $this->getDataFromRequest($this->requestPayload, 'product_id'),
                 ['ingredients', 'ingredients.stock']
             );
     }
     
-    private function validateQuantity(Collection $products, array $productsRequest) : void
+    private function validateQuantity() : void
     {
-        $productIdsWithQuantity = $this->getDataFromRequest($productsRequest, 'quantity', 'product_id');
+        $productIdsWithQuantity = $this->getDataFromRequest($this->requestPayload, 'quantity', 'product_id');
 
-        $products->map(function($product) use ($productIdsWithQuantity) {
+        $this->dbProducts->map(function($product) use ($productIdsWithQuantity) {
+            foreach ($product->ingredients as $ingred) {
+                $currentQuantityInStock = $ingred->stock['current_stock'];
+                $productQuantityUsed = $ingred->pivot['quantity'];
+                $quantityRequested = $productIdsWithQuantity[$product->id];
+                if ($currentQuantityInStock < ($quantityRequested * $productQuantityUsed)) {
+                    throw new GoneHttpException("the product with id {$product->id} out of stock");
+                }
+            }
+        });
+    }
+
+    private function persistTheOrder() : void
+    {
+        $productIdsWithQuantity = $this->getDataFromRequest($this->requestPayload, 'quantity', 'product_id');
+
+        $this->dbProducts->map(function($product) use ($productIdsWithQuantity) {
             foreach ($product->ingredients as $ingred) {
                 $currentQuantityInStock = $ingred->stock['current_stock'];
                 $productQuantityUsed = $ingred->pivot['quantity'];
