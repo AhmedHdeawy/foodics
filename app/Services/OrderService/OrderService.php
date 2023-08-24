@@ -4,6 +4,7 @@ use App\Repositories\OrderRepository;
 use App\Repositories\ProductRepository;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Collection;
+use Symfony\Component\HttpKernel\Exception\GoneHttpException;
 
 class OrderService implements OrderServiceContract
 {
@@ -35,15 +36,24 @@ class OrderService implements OrderServiceContract
             );
     }
     
-    private function validateQuantity(Collection $products, array $productsRequest) : Collection
+    private function validateQuantity(Collection $products, array $productsRequest) : void
     {
-        $productsIds = $this->getDataFromRequest($productsRequest, 'quantity');
+        $productIdsWithQuantity = $this->getDataFromRequest($productsRequest, 'quantity', 'product_id');
 
-        return $this->productRepository->getWhereIn($productsIds);
+        $products->map(function($product) use ($productIdsWithQuantity) {
+            foreach ($product->ingredients as $ingred) {
+                $currentQuantityInStock = $ingred->stock['current_stock'];
+                $productQuantityUsed = $ingred->pivot['quantity'];
+                $quantityRequested = $productIdsWithQuantity[$product->id];
+                if ($currentQuantityInStock < ($quantityRequested * $productQuantityUsed)) {
+                    throw new GoneHttpException("the product with id {$product->id} out of stock");
+                }
+            }
+        });
     }
 
-    private function getDataFromRequest(array $productsRequest, string $key) : array
+    private function getDataFromRequest(array $productsRequest, string $value, string $key = null) : array
     {
-        return collect($productsRequest)->pluck($key)->toArray();       
+        return collect($productsRequest)->pluck($value, $key)->toArray();
     }
 }
