@@ -19,14 +19,23 @@ abstract class BaseRepository
         return app()->make($this->model());
     }
     
-    public function getAll(): Collection
+    public function getAll(array $with = null): Collection
     {
-        return $this->model->get();
+        $query =  $this->model;
+        if ($with) {
+            $query->with($with);
+        }
+
+        return $query->get();
     }
 
-    public function getWhereIn(array $ids, string $columns = 'id'): Collection
+    public function getWhereIn(array $ids, array $with = null, string $columns = 'id'): Collection
     {
-        return $this->model->whereIn($columns, $ids)->get();
+        $query =  $this->model;
+        if ($with) {
+            $query = $query->with($with);
+        }
+        return $query->whereIn($columns, $ids)->get();
     }
     
     public function getOne(int $id): Model

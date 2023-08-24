@@ -19,6 +19,7 @@ class OrderService implements OrderServiceContract
         $dbProducts = $this->getProducts($data['products']);
 
         // validate the quantity
+        $this->validateQuantity($dbProducts, $data['products']);
 
         // persist the order in the database with the product items
 
@@ -27,8 +28,22 @@ class OrderService implements OrderServiceContract
 
     private function getProducts(array $productsRequest) : Collection
     {
-        $productsIds = collect($productsRequest)->pluck('product_id')->toArray();
+        return $this->productRepository
+            ->getWhereIn(
+                $this->getDataFromRequest($productsRequest, 'product_id'),
+                ['ingredients', 'ingredients.stock']
+            );
+    }
+    
+    private function validateQuantity(Collection $products, array $productsRequest) : Collection
+    {
+        $productsIds = $this->getDataFromRequest($productsRequest, 'quantity');
 
         return $this->productRepository->getWhereIn($productsIds);
+    }
+
+    private function getDataFromRequest(array $productsRequest, string $key) : array
+    {
+        return collect($productsRequest)->pluck($key)->toArray();       
     }
 }
