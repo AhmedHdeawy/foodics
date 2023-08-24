@@ -20,10 +20,37 @@ class OrderControllerTest extends TestCase
     private Model $onion;
 
 
-    public function test_place_new_order_request_without_payload() : void
+    public function test_place_new_order_request_without_payload_should_fail() : void
     {
         $this->postJson('/api/orders/place-order')
-            ->assertStatus(422);
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['products']);
+    }
+
+    public function test_place_new_order_request_without_product_id_should_fail() : void
+    {
+        $data = [
+            'products' => [
+                ['quantity' => 2]
+            ]
+        ];
+
+        $this->postJson('/api/orders/place-order', $data)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['products.0.product_id']);
+    }
+    
+    public function test_place_new_order_request_without_quantity_should_fail() : void
+    {
+        $data = [
+            'products' => [
+                ['product_id' => 2]
+            ]
+        ];
+
+        $this->postJson('/api/orders/place-order', $data)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['products.0.quantity']);
     }
 
     /**
