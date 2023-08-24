@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Requests\PlaceOrderRequest;
-use App\Services\OrderService\OrderServiceContract;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\PlaceOrderRequest;
+use Symfony\Component\HttpFoundation\Response;
+use App\Services\OrderService\OrderServiceContract;
 
 class OrderController extends Controller
 {
@@ -23,6 +24,6 @@ class OrderController extends Controller
     {
         $order = $this->orderService->placeOrder($request->validated());
 
-        return response()->json($order, 201);
+        return response()->json($order, Response::HTTP_CREATED);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 use App\Models\Stock;
 use App\Models\Product;
@@ -53,10 +54,26 @@ class OrderControllerTest extends TestCase
             ->assertJsonValidationErrors(['products.0.quantity']);
     }
 
-    /**
-     * Test creating a new order.
-     */
-    public function test_place_new_order(): void
+        public function test_place_new_order_with_low_quantity_should_fail_with_410(): void
+    {
+        // Create ingredients and products
+        $this->seedAndReturnProductWithIngredient();
+
+        // Make an order request payload
+        $orderPayload = [
+            'products' => [
+                ['product_id' => $this->product->id, 'quantity' => 500]
+            ]
+        ];
+
+        // Make a POST request to the placeOrder action
+        $response = $this->postJson('/api/orders/place-order', $orderPayload);
+
+        // Assert the response and database changes
+        $response->assertStatus(Response::HTTP_GONE);
+    }
+
+    public function test_place_new_order_successfully(): void
     {
         // Create ingredients and products
         $this->seedAndReturnProductWithIngredient();
@@ -72,7 +89,7 @@ class OrderControllerTest extends TestCase
         $response = $this->postJson('/api/orders/place-order', $orderPayload);
 
         // Assert the response and database changes
-        $response->assertStatus(201);
+        $response->assertStatus(Response::HTTP_CREATED);
         $this->assertDatabaseHas('orders', ['id' => 1]);
         $this->assertDatabaseHas('order_items', ['id' => 1, 'product_id' => $this->product->id, 'order_id' => 1, 'quantity' => 2]);
         $this->assertDatabaseHas('order_items_ingredients', ['ingredient_id' => $this->beef->id, 'order_item_id' => 1, 'order_id' => 1, 'quantity' => 300]);

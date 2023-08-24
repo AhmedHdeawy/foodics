@@ -25,6 +25,7 @@ class OrderService implements OrderServiceContract
         // persist the order in the database with the product items
 
         // update the stock
+        return $this->orderRepository->create([]);
     }
 
     private function getProducts(array $productsRequest) : Collection
