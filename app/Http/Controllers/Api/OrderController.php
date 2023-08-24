@@ -21,7 +21,7 @@ class OrderController extends Controller
      **/
     public function __invoke(PlaceOrderRequest $request)
     {
-        $order = $this->orderService->placeOrder($request->all());
+        $order = $this->orderService->placeOrder($request->validated());
 
         return response()->json($order, 201);
     }
