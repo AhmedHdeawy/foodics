@@ -19,6 +19,13 @@ class OrderControllerTest extends TestCase
     private Model $cheese;
     private Model $onion;
 
+
+    public function test_place_new_order_request_without_payload() : void
+    {
+        $this->postJson('/api/orders/place-order')
+            ->assertStatus(422);
+    }
+
     /**
      * Test creating a new order.
      */
