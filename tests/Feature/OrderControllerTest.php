@@ -69,7 +69,7 @@ class OrderControllerTest extends TestCase
         ];
 
         // Make a POST request to the placeOrder action
-        $response = $this->postJson('/api/place-order', $orderPayload);
+        $response = $this->postJson('/api/orders/place-order', $orderPayload);
 
         // Assert the response and database changes
         $response->assertStatus(201);
