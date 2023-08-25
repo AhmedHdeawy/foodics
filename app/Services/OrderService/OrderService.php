@@ -1,6 +1,8 @@
 <?php
 namespace App\Services\OrderService;
 use App\Models\Order;
+use App\Models\OrderItem;
+use Illuminate\Support\Facades\DB;
 use App\Repositories\OrderRepository;
 use App\Repositories\ProductRepository;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +16,10 @@ class OrderService implements OrderServiceContract
     protected array $requestPayload;
     
     protected Order $order;
+    
+    protected Collection $orderItems;
+    
+    protected array $orderItemsDetails = [];
 
     public function __construct(
         protected OrderRepository $orderRepository,
@@ -22,15 +28,24 @@ class OrderService implements OrderServiceContract
 
     public function placeOrder(array $data) : Model
     {
-        $this->requestPayload = $data['products'];
-        // Get the products details from DB
-        $this->getProducts();
+        DB::beginTransaction();
+        try {
+            $this->requestPayload = $data['products'];
+            // Get the products details from DB
+            $this->getProducts();
+    
+            // validate the quantity
+            $this->validateQuantity();
+    
+            // persist the order in the database with the product items
+            $this->persistTheOrder();
 
-        // validate the quantity
-        $this->validateQuantity();
+            DB::commit();
 
-        // persist the order in the database with the product items
-        $this->persistTheOrder();
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            throw new GoneHttpException($th->getMessage());
+        }
 
         // update the stock
         return $this->order;
@@ -63,14 +78,29 @@ class OrderService implements OrderServiceContract
 
     private function persistTheOrder() : void
     {
+        $orderPrice = $this->prepareOrderDetails();
+        
+        // save the order in DB
+        $this->order = $this->orderRepository->create(['price' => $orderPrice]);
+        
+        // attach order items to the order
+        $this->order->items()->createMany($this->orderItemsDetails);
+    }
+
+    private function prepareOrderDetails(): float|int
+    {
         $productIdsWithQuantity = $this->getDataFromRequest($this->requestPayload, 'quantity', 'product_id');
         $orderPrice = 0;
         foreach ($this->dbProducts as $product) {
             $orderPrice += $product->price * $productIdsWithQuantity[$product->id];
+            array_push($this->orderItemsDetails, [
+                'price' => $product->price,
+                'quantity' => $productIdsWithQuantity[$product->id],
+                'product_id' => $product->id
+            ]);
         }
-        
-        $this->order = $this->orderRepository->create(['price' => $orderPrice]);
-        
+
+        return $orderPrice;
     }
 
     private function getDataFromRequest(array $productsRequest, string $value, string $key = null) : array

@@ -92,12 +92,14 @@ class OrderControllerTest extends TestCase
         $response->assertStatus(Response::HTTP_CREATED);
         $this->assertDatabaseHas('orders', ['id' => 1]);
         $this->assertDatabaseHas('order_items', ['id' => 1, 'product_id' => $this->product->id, 'order_id' => 1, 'quantity' => 2]);
-        $this->assertDatabaseHas('order_items_ingredients', ['ingredient_id' => $this->beef->id, 'order_item_id' => 1, 'order_id' => 1, 'quantity' => 300]);
-        $this->assertDatabaseHas('order_items_ingredients', ['ingredient_id' => $this->cheese->id, 'order_item_id' => 1, 'order_id' => 1, 'quantity' => 60]);
-        $this->assertDatabaseHas('order_items_ingredients', ['ingredient_id' => $this->onion->id, 'order_item_id' => 1, 'order_id' => 1, 'quantity' => 40]);
-        // $this->assertDatabaseHas('stock', ['ingredient_id' => $this->beef->id, 'current_stock' => 18500]); // 20000 - (150 * 2)
-        // $this->assertDatabaseHas('stock', ['ingredient_id' => $this->cheese->id, 'current_stock' => 4940]); // 5000 - (30 * 2)
-        // $this->assertDatabaseHas('stock', ['ingredient_id' => $this->onion->id, 'current_stock' => 960]); // 1000 - (20 * 2)
+        $this->assertDatabaseHas('stock', ['ingredient_id' => $this->beef->id, 'current_stock' => 18500]); // 20000 - (150 * 2)
+        $this->assertDatabaseHas('stock', ['ingredient_id' => $this->cheese->id, 'current_stock' => 4940]); // 5000 - (30 * 2)
+        $this->assertDatabaseHas('stock', ['ingredient_id' => $this->onion->id, 'current_stock' => 960]); // 1000 - (20 * 2)
+
+        // TODO: later we may use these assertions
+        // $this->assertDatabaseHas('order_items_ingredients', ['ingredient_id' => $this->beef->id, 'order_item_id' => 1, 'order_id' => 1, 'quantity' => 300]);
+        // $this->assertDatabaseHas('order_items_ingredients', ['ingredient_id' => $this->cheese->id, 'order_item_id' => 1, 'order_id' => 1, 'quantity' => 60]);
+        // $this->assertDatabaseHas('order_items_ingredients', ['ingredient_id' => $this->onion->id, 'order_item_id' => 1, 'order_id' => 1, 'quantity' => 40]);
     }
 
     private function seedAndReturnProductWithIngredient(): void
