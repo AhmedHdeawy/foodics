@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\UpdateTheStock;
+use Illuminate\Support\Facades\Queue;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
 use App\Models\Stock;
@@ -54,7 +56,7 @@ class OrderControllerTest extends TestCase
             ->assertJsonValidationErrors(['products.0.quantity']);
     }
 
-        public function test_place_new_order_with_low_quantity_should_fail_with_410(): void
+    public function test_place_new_order_with_low_quantity_should_fail_with_410(): void
     {
         // Create ingredients and products
         $this->seedAndReturnProductWithIngredient();
@@ -87,14 +89,48 @@ class OrderControllerTest extends TestCase
 
         // Make a POST request to the placeOrder action
         $response = $this->postJson('/api/orders/place-order', $orderPayload);
+        $createdOrder = $response->getOriginalContent();
 
         // Assert the response and database changes
         $response->assertStatus(Response::HTTP_CREATED);
-        $this->assertDatabaseHas('orders', ['id' => 1]);
-        $this->assertDatabaseHas('order_items', ['id' => 1, 'product_id' => $this->product->id, 'order_id' => 1, 'quantity' => 2]);
-        $this->assertDatabaseHas('stock', ['ingredient_id' => $this->beef->id, 'current_stock' => 18500]); // 20000 - (150 * 2)
-        $this->assertDatabaseHas('stock', ['ingredient_id' => $this->cheese->id, 'current_stock' => 4940]); // 5000 - (30 * 2)
-        $this->assertDatabaseHas('stock', ['ingredient_id' => $this->onion->id, 'current_stock' => 960]); // 1000 - (20 * 2)
+        $this->assertDatabaseHas('orders', ['id' => $createdOrder->id]);
+        $this->assertDatabaseHas('order_items', ['id' => 1, 'product_id' => $this->product->id, 'order_id' => $createdOrder->id, 'quantity' => 2]);
+
+        // TODO: later we may use these assertions
+        // $this->assertDatabaseHas('order_items_ingredients', ['ingredient_id' => $this->beef->id, 'order_item_id' => 1, 'order_id' => 1, 'quantity' => 300]);
+        // $this->assertDatabaseHas('order_items_ingredients', ['ingredient_id' => $this->cheese->id, 'order_item_id' => 1, 'order_id' => 1, 'quantity' => 60]);
+        // $this->assertDatabaseHas('order_items_ingredients', ['ingredient_id' => $this->onion->id, 'order_item_id' => 1, 'order_id' => 1, 'quantity' => 40]);
+    }
+    
+    public function test_place_new_order_successfully_and_stock_updated(): void
+    {
+        Queue::fake();
+
+        // Create ingredients and products
+        $this->seedAndReturnProductWithIngredient();
+
+        // Make an order request payload
+        $orderPayload = [
+            'products' => [
+                ['product_id' => $this->product->id, 'quantity' => 2]
+            ]
+        ];
+
+        // Make a POST request to the placeOrder action
+        $response = $this->postJson('/api/orders/place-order', $orderPayload);
+        $createdOrder = $response->getOriginalContent();
+
+        // Assert the response and database changes
+        $response->assertStatus(Response::HTTP_CREATED);
+        
+        // Assert stocks updates
+        Queue::assertPushed(UpdateTheStock::class);
+        Queue::assertPushed(function (UpdateTheStock $job) use ($createdOrder) {
+            return $job->orderId === $createdOrder->id;
+        });
+        // $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->beef->id, 'current_stock' => 18500]); // 20000 - (150 * 2)
+        // $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->cheese->id, 'current_stock' => 4940]); // 5000 - (30 * 2)
+        // $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->onion->id, 'current_stock' => 960]); // 1000 - (20 * 2)
 
         // TODO: later we may use these assertions
         // $this->assertDatabaseHas('order_items_ingredients', ['ingredient_id' => $this->beef->id, 'order_item_id' => 1, 'order_id' => 1, 'quantity' => 300]);

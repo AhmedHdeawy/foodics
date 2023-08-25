@@ -1,5 +1,6 @@
 <?php
 namespace App\Services\OrderService;
+use App\Jobs\UpdateTheStock;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Support\Facades\DB;
@@ -41,13 +42,14 @@ class OrderService implements OrderServiceContract
             $this->persistTheOrder();
 
             DB::commit();
-
         } catch (\Throwable $th) {
             DB::rollBack();
             throw new GoneHttpException($th->getMessage());
         }
 
         // update the stock
+        UpdateTheStock::dispatch($this->order->id);
+
         return $this->order;
     }
 

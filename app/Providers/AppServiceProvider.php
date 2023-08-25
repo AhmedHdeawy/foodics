@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
-use App\Services\OrderService\OrderService;
-use App\Services\OrderService\OrderServiceContract;
 use Illuminate\Support\ServiceProvider;
+use App\Services\OrderService\OrderService;
+use App\Services\StockService\StockService;
+use App\Services\OrderService\OrderServiceContract;
+use App\Services\StockService\StockServiceContract;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -15,7 +17,8 @@ class AppServiceProvider extends ServiceProvider
      * @var array
      */
     public $bindings = [
-        OrderServiceContract::class => OrderService::class
+        OrderServiceContract::class => OrderService::class,
+        StockServiceContract::class => StockService::class
     ];
 
     /**
