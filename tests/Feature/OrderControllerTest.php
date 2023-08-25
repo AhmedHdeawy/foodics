@@ -17,7 +17,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class OrderControllerTest extends TestCase
 {
-    use RefreshDatabase, DatabaseMigrations;
+    use RefreshDatabase;
 
     private Model $product;
     private Model $beef;
@@ -134,8 +134,9 @@ class OrderControllerTest extends TestCase
 
         // Run the queue worker
         Artisan::call('queue:work', ['--stop-when-empty' => true]);
-        
-        $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->beef->id, 'current_stock' => 18500]); // 20000 - (150 * 2)
+
+        sleep(2);
+        $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->beef->id, 'current_stock' => 19700]); // 20000 - (150 * 2)
         $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->cheese->id, 'current_stock' => 4940]); // 5000 - (30 * 2)
         $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->onion->id, 'current_stock' => 960]); // 1000 - (20 * 2)
     }

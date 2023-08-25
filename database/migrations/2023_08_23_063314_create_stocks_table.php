@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('stocks', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('ingredient_id')->constrained('ingredients')->cascadeOnDelete()->cascadeOnUpdate();
+            $table->foreignId('ingredient_id')->constrained('ingredients')->cascadeOnDelete();
             $table->unsignedMediumInteger('initial_stock')->default(0)->comment('quantity in base unit i.e. gm');
             $table->unsignedMediumInteger('current_stock')->default(0)->comment('quantity in base unit i.e. gm');
             $table->timestamps();

@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('product_ingredients', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('ingredient_id')->constrained('ingredients')->cascadeOnDelete()->cascadeOnUpdate();
-            $table->foreignId('product_id')->constrained('products')->cascadeOnDelete()->cascadeOnUpdate();
+            $table->foreignId('ingredient_id')->constrained('ingredients')->cascadeOnDelete();
+            $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
             $table->unsignedMediumInteger('quantity')->nullable()->comment('in base unit, i.e gram, piece, etc');
             $table->timestamps();
         });
