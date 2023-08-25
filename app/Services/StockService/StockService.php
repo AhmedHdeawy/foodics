@@ -37,7 +37,6 @@ class StockService implements StockServiceContract
                     $stockToUpdate->current_stock -= $item->quantity * $quantityUsedInTheProduct;
                     $stockToUpdate->save();
                 }
-                echo "HEY";
             });
         
             DB::commit();

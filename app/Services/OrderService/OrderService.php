@@ -29,7 +29,6 @@ class OrderService implements OrderServiceContract
 
     public function placeOrder(array $data) : Model
     {
-        DB::beginTransaction();
         try {
             $this->requestPayload = $data['products'];
             // Get the products details from DB
@@ -40,10 +39,7 @@ class OrderService implements OrderServiceContract
     
             // persist the order in the database with the product items
             $this->persistTheOrder();
-
-            DB::commit();
         } catch (\Throwable $th) {
-            DB::rollBack();
             throw new GoneHttpException($th->getMessage());
         }
 
@@ -80,13 +76,20 @@ class OrderService implements OrderServiceContract
 
     private function persistTheOrder() : void
     {
-        $orderPrice = $this->prepareOrderDetails();
-        
-        // save the order in DB
-        $this->order = $this->orderRepository->create(['price' => $orderPrice]);
-        
-        // attach order items to the order
-        $this->order->items()->createMany($this->orderItemsDetails);
+        DB::beginTransaction();
+        try {
+            $orderPrice = $this->prepareOrderDetails();
+            
+            // save the order in DB
+            $this->order = $this->orderRepository->create(['price' => $orderPrice]);
+            
+            // attach order items to the order
+            $this->order->items()->createMany($this->orderItemsDetails);
+            DB::commit();
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            throw $th;
+        }
     }
 
     private function prepareOrderDetails(): float|int
