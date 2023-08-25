@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Jobs\UpdateTheStock;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Queue;
 use Symfony\Component\HttpFoundation\Response;
 use Tests\TestCase;
@@ -15,7 +17,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class OrderControllerTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshDatabase, DatabaseMigrations;
 
     private Model $product;
     private Model $beef;
@@ -122,15 +124,20 @@ class OrderControllerTest extends TestCase
 
         // Assert the response and database changes
         $response->assertStatus(Response::HTTP_CREATED);
+        $this->assertDatabaseHas('orders', ['id' => $createdOrder->id]);
         
         // Assert stocks updates
         Queue::assertPushed(UpdateTheStock::class);
         Queue::assertPushed(function (UpdateTheStock $job) use ($createdOrder) {
             return $job->orderId === $createdOrder->id;
         });
-        // $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->beef->id, 'current_stock' => 18500]); // 20000 - (150 * 2)
-        // $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->cheese->id, 'current_stock' => 4940]); // 5000 - (30 * 2)
-        // $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->onion->id, 'current_stock' => 960]); // 1000 - (20 * 2)
+
+        // Run the queue worker
+        Artisan::call('queue:work', ['--stop-when-empty' => true]);
+        
+        $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->beef->id, 'current_stock' => 18500]); // 20000 - (150 * 2)
+        $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->cheese->id, 'current_stock' => 4940]); // 5000 - (30 * 2)
+        $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->onion->id, 'current_stock' => 960]); // 1000 - (20 * 2)
     }
 
     private function seedAndReturnProductWithIngredient(): void
