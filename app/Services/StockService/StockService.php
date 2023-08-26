@@ -1,5 +1,6 @@
 <?php
 namespace App\Services\StockService;
+use App\Events\LowStockEvent;
 use App\Models\Order;
 use App\Models\Stock;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +27,6 @@ class StockService implements StockServiceContract
         DB::beginTransaction();
         try {
             $this->order = $this->orderRepository->getOne($orderId);
-            // dd($this->order, 12);
             $this->orderItems = $this->order->items()->get();
             $this->orderItems->map(function($item) {
                 $productWithIngredients = $item->product()->with(['ingredients', 'ingredients.stock'])->first();
@@ -37,6 +37,9 @@ class StockService implements StockServiceContract
                     $stockToUpdate = $this->stockRepository->getOne($dbStock->id);
                     $stockToUpdate->current_stock -= $item->quantity * $quantityUsedInTheProduct;
                     $stockToUpdate->save();
+
+                    // Run low stock event to check it reached to 50% of the stock quantity
+                    LowStockEvent::dispatch($stockToUpdate->refresh());
                 }
             });
         
@@ -45,6 +48,5 @@ class StockService implements StockServiceContract
             DB::rollBack();
             throw new GoneHttpException($th->getMessage());
         }
-        // dd(Stock::all());
     }
 }

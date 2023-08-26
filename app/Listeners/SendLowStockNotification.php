@@ -21,6 +21,19 @@ class SendLowStockNotification implements ShouldQueue
      */
     public function handle(LowStockEvent $event): void
     {
-        dd($event->stock);
+        // In case of low stock notification not sent before
+        $totalQty = $event->stock->initial_stock;   // 200
+        $currentQty = $event->stock->current_stock; // 90
+        // 90 < 100
+        if ( !$event->stock->notified && $currentQty <= ($totalQty / 2)) {
+
+            // Send Notification
+            
+            // Update the notified to true
+            $event->stock->notified = true;
+            $event->stock->save();
+
+            // whenever we added a stock we will update it again to false
+        }
     }
 }
