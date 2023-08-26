@@ -46,13 +46,13 @@ To run the application test cases
 
 ## What I did ?
 
-- Api request to create a new order.
-- validate the request payload.
-- check the product stock if available.
-- persist the order in the database with the items.
-- dispatch a background job to update the stock
+- API request to create a new order.
+- Validate the request payload.
+- Check the product stock if available.
+- Persist the order in the database with the items.
+- Dispatch a background job to update the stock
   - Fire an event to check the stock quantity.
-  - Send a notification from the event listener if the stock quantity reached the limit (50%)
+  - Send a notification from the event listener if the stock quantity reaches the limit (50%)
 - 8 Test cases to test all the above.
 
 ##
