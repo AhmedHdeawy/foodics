@@ -23,9 +23,10 @@ class StockService implements StockServiceContract
 
     public function updateStock(int $orderId) : void
     {
-        // DB::beginTransaction();
+        DB::beginTransaction();
         try {
             $this->order = $this->orderRepository->getOne($orderId);
+            // dd($this->order, 12);
             $this->orderItems = $this->order->items()->get();
             $this->orderItems->map(function($item) {
                 $productWithIngredients = $item->product()->with(['ingredients', 'ingredients.stock'])->first();
@@ -39,9 +40,9 @@ class StockService implements StockServiceContract
                 }
             });
         
-            // DB::commit();
+            DB::commit();
         } catch (\Throwable $th) {
-            // DB::rollBack();
+            DB::rollBack();
             throw new GoneHttpException($th->getMessage());
         }
         // dd(Stock::all());

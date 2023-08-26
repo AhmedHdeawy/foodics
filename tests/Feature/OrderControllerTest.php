@@ -2,17 +2,16 @@
 
 namespace Tests\Feature;
 
-use App\Jobs\UpdateTheStock;
-use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Queue;
-use Symfony\Component\HttpFoundation\Response;
+use App\Services\StockService\StockServiceContract;
 use Tests\TestCase;
+use App\Models\Order;
 use App\Models\Stock;
 use App\Models\Product;
 use App\Models\Ingredient;
+use App\Jobs\UpdateTheStock;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Foundation\Testing\WithFaker;
+use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class OrderControllerTest extends TestCase
@@ -104,7 +103,7 @@ class OrderControllerTest extends TestCase
         // $this->assertDatabaseHas('order_items_ingredients', ['ingredient_id' => $this->onion->id, 'order_item_id' => 1, 'order_id' => 1, 'quantity' => 40]);
     }
     
-    public function test_place_new_order_successfully_and_stock_updated(): void
+    public function test_stock_updated_after_order_created(): void
     {
         Queue::fake();
 
@@ -112,30 +111,28 @@ class OrderControllerTest extends TestCase
         $this->seedAndReturnProductWithIngredient();
 
         // Make an order request payload
-        $orderPayload = [
-            'products' => [
-                ['product_id' => $this->product->id, 'quantity' => 2]
-            ]
-        ];
+        $orderPayload = ['products' => [['product_id' => $this->product->id, 'quantity' => 2]]];
 
         // Make a POST request to the placeOrder action
-        $response = $this->postJson('/api/orders/place-order', $orderPayload);
-        $createdOrder = $response->getOriginalContent();
-
-        // Assert the response and database changes
-        $response->assertStatus(Response::HTTP_CREATED);
-        $this->assertDatabaseHas('orders', ['id' => $createdOrder->id]);
+        $this->postJson('/api/orders/place-order', $orderPayload);
         
-        // Assert stocks updates
+        // Get the created order
+        $createdOrder = Order::latest()->first();
+        
+        // Assert update stock job has dispatched with the correct order
         Queue::assertPushed(UpdateTheStock::class);
         Queue::assertPushed(function (UpdateTheStock $job) use ($createdOrder) {
             return $job->orderId === $createdOrder->id;
         });
 
-        // Run the queue worker
-        Artisan::call('queue:work', ['--stop-when-empty' => true]);
+        // Resolve the stock service
+        $stockServiceFake = $this->app->make(StockServiceContract::class);
+        
+        // Run the update stock job
+        $job = new UpdateTheStock($createdOrder->id);
+        $job->handle($stockServiceFake);
 
-        sleep(2);
+        // Assert database changes
         $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->beef->id, 'current_stock' => 19700]); // 20000 - (150 * 2)
         $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->cheese->id, 'current_stock' => 4940]); // 5000 - (30 * 2)
         $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->onion->id, 'current_stock' => 960]); // 1000 - (20 * 2)
