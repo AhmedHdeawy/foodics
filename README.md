@@ -1,4 +1,4 @@
-<p align="center"><a href="https://www.foodics.com/" target="_blank"><img src="https://www.foodics.com/wp-content/uploads/2021/12/foodics-logo.svg" width="400" alt="Foodics Logo"></a></p>
+# Simple Restaurant System
 
 
 ## Project Structure
@@ -25,9 +25,7 @@ To run the application test cases
 ```./vendor/bin/sail test```
 
 
-
-
-### What I did ?
+## What I did ?
 
 - Api request to create a new order.
 - validate the request payload.
