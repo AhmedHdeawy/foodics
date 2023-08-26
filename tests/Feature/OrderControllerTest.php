@@ -2,16 +2,20 @@
 
 namespace Tests\Feature;
 
-use App\Events\LowStockEvent;
 use Tests\TestCase;
 use App\Models\Order;
 use App\Models\Stock;
 use App\Models\Product;
 use App\Models\Ingredient;
 use App\Jobs\UpdateTheStock;
+use App\Events\LowStockEvent;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Queue\Events\JobProcessed;
+use App\Notifications\LowStockNotification;
+use Illuminate\Support\Facades\Notification;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use App\Services\StockService\StockServiceContract;
@@ -132,13 +136,13 @@ class OrderControllerTest extends TestCase
         $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->onion->id, 'current_stock' => 960]); // 1000 - (20 * 2)
     }
     
-    public function test_low_stock_notification(): void
+    public function test_low_stock_event_has_fired(): void
     {
         Event::fake();
 
         // Create ingredients and products
         $this->seedAndReturnProductWithIngredient();
-        $orderPayload = ['products' => [['product_id' => $this->product->id, 'quantity' => 2]]];
+        $orderPayload = ['products' => [['product_id' => $this->product->id, 'quantity' => 10]]];
         $this->postJson('/api/orders/place-order', $orderPayload);
         
         // Get the created order
@@ -148,6 +152,23 @@ class OrderControllerTest extends TestCase
         $this->runUpdateStockJob($createdOrder->id);
 
         Event::assertDispatched((LowStockEvent::class));
+    }
+
+    public function test_low_stock_notification(): void
+    {
+        Notification::fake();
+
+        // Create ingredients and products
+        $this->seedAndReturnProductWithIngredient();
+        $orderPayload = ['products' => [['product_id' => $this->product->id, 'quantity' => 40]]];
+        $this->postJson('/api/orders/place-order', $orderPayload);
+        
+        Notification::assertSentOnDemand(
+            LowStockNotification::class,
+            function (LowStockNotification $notification, array $channels, object $notifiable) {
+                return $notifiable->routes['mail'] === config('services.merchant_mail');
+            }
+        );
 
     }
 

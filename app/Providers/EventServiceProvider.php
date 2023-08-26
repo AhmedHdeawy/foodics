@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use App\Events\LowStockEvent;
-use App\Listeners\SendLowStockNotification;
+use App\Listeners\LowStockNotificationListener;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -21,7 +21,7 @@ class EventServiceProvider extends ServiceProvider
             SendEmailVerificationNotification::class,
         ],
         LowStockEvent::class => [
-            SendLowStockNotification::class
+            LowStockNotificationListener::class
         ]
     ];
 

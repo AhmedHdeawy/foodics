@@ -1,9 +1,10 @@
 <?php
 namespace App\Services\StockService;
-use App\Events\LowStockEvent;
 use App\Models\Order;
 use App\Models\Stock;
+use App\Events\LowStockEvent;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Repositories\OrderRepository;
 use App\Repositories\StockRepository;
 use App\Repositories\ProductRepository;
@@ -35,7 +36,12 @@ class StockService implements StockServiceContract
                     $quantityUsedInTheProduct = $ingred->pivot->quantity;
                     
                     $stockToUpdate = $this->stockRepository->getOne($dbStock->id);
-                    $stockToUpdate->current_stock -= $item->quantity * $quantityUsedInTheProduct;
+                    $qtyToBeSave = $stockToUpdate->current_stock - ($item->quantity * $quantityUsedInTheProduct);
+                    if ($qtyToBeSave <= 0) {
+                        $stockToUpdate->current_stock = 0;
+                    } else {
+                        $stockToUpdate->current_stock = $qtyToBeSave;
+                    }
                     $stockToUpdate->save();
 
                     // Run low stock event to check it reached to 50% of the stock quantity
