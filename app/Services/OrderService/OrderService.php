@@ -67,7 +67,6 @@ class OrderService implements OrderServiceContract
                 $currentQuantityInStock = $ingred->stock['current_stock'];
                 $productQuantityUsed = $ingred->pivot['quantity'];
                 $quantityRequested = $productIdsWithQuantity[$product->id];
-                // dd($currentQuantityInStock, $quantityRequested, $productQuantityUsed, $currentQuantityInStock < ($quantityRequested * $productQuantityUsed));
                 if ($currentQuantityInStock < ($quantityRequested * $productQuantityUsed)) {
                     throw new GoneHttpException("the product with id {$product->id} out of stock");
                 }

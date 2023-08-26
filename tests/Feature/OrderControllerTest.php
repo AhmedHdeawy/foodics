@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Queue\Events\JobProcessed;
 use App\Notifications\LowStockNotification;
 use Illuminate\Support\Facades\Notification;
 use Symfony\Component\HttpFoundation\Response;
@@ -102,11 +101,6 @@ class OrderControllerTest extends TestCase
         $response->assertStatus(Response::HTTP_CREATED);
         $this->assertDatabaseHas('orders', ['id' => $createdOrder->id]);
         $this->assertDatabaseHas('order_items', ['id' => 1, 'product_id' => $this->product->id, 'order_id' => $createdOrder->id, 'quantity' => 2]);
-
-        // TODO: later we may use these assertions
-        // $this->assertDatabaseHas('order_items_ingredients', ['ingredient_id' => $this->beef->id, 'order_item_id' => 1, 'order_id' => 1, 'quantity' => 300]);
-        // $this->assertDatabaseHas('order_items_ingredients', ['ingredient_id' => $this->cheese->id, 'order_item_id' => 1, 'order_id' => 1, 'quantity' => 60]);
-        // $this->assertDatabaseHas('order_items_ingredients', ['ingredient_id' => $this->onion->id, 'order_item_id' => 1, 'order_id' => 1, 'quantity' => 40]);
     }
     
     public function test_stock_updated_after_order_created(): void
@@ -154,7 +148,7 @@ class OrderControllerTest extends TestCase
         Event::assertDispatched((LowStockEvent::class));
     }
 
-    public function test_low_stock_notification(): void
+    public function test_low_stock_notification_has_sent(): void
     {
         Notification::fake();
 
