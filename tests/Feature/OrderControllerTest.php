@@ -2,17 +2,19 @@
 
 namespace Tests\Feature;
 
-use App\Services\StockService\StockServiceContract;
+use App\Events\LowStockEvent;
 use Tests\TestCase;
 use App\Models\Order;
 use App\Models\Stock;
 use App\Models\Product;
 use App\Models\Ingredient;
 use App\Jobs\UpdateTheStock;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Services\StockService\StockServiceContract;
 
 class OrderControllerTest extends TestCase
 {
@@ -109,11 +111,7 @@ class OrderControllerTest extends TestCase
 
         // Create ingredients and products
         $this->seedAndReturnProductWithIngredient();
-
-        // Make an order request payload
         $orderPayload = ['products' => [['product_id' => $this->product->id, 'quantity' => 2]]];
-
-        // Make a POST request to the placeOrder action
         $this->postJson('/api/orders/place-order', $orderPayload);
         
         // Get the created order
@@ -125,17 +123,42 @@ class OrderControllerTest extends TestCase
             return $job->orderId === $createdOrder->id;
         });
 
-        // Resolve the stock service
-        $stockServiceFake = $this->app->make(StockServiceContract::class);
-        
         // Run the update stock job
-        $job = new UpdateTheStock($createdOrder->id);
-        $job->handle($stockServiceFake);
+        $this->runUpdateStockJob($createdOrder->id);
 
         // Assert database changes
         $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->beef->id, 'current_stock' => 19700]); // 20000 - (150 * 2)
         $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->cheese->id, 'current_stock' => 4940]); // 5000 - (30 * 2)
         $this->assertDatabaseHas('stocks', ['ingredient_id' => $this->onion->id, 'current_stock' => 960]); // 1000 - (20 * 2)
+    }
+    
+    public function test_low_stock_notification(): void
+    {
+        Event::fake();
+
+        // Create ingredients and products
+        $this->seedAndReturnProductWithIngredient();
+        $orderPayload = ['products' => [['product_id' => $this->product->id, 'quantity' => 2]]];
+        $this->postJson('/api/orders/place-order', $orderPayload);
+        
+        // Get the created order
+        $createdOrder = Order::latest()->first();
+        
+        // Run the update stock job
+        $this->runUpdateStockJob($createdOrder->id);
+
+        Event::assertDispatched((LowStockEvent::class));
+
+    }
+
+    private function runUpdateStockJob(int $orderId) : void
+    {
+        // Resolve the stock service
+        $stockServiceFake = $this->app->make(StockServiceContract::class);
+        
+        // Run the update stock job
+        $job = new UpdateTheStock($orderId);
+        $job->handle($stockServiceFake);
     }
 
     private function seedAndReturnProductWithIngredient(): void
