@@ -31,4 +31,6 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'merchant_mail' => env('MERCHANT_EMAIL', 'admin@admin.com')
+
 ];
